@@ -19,6 +19,7 @@ import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.*
 import java.util.*
+import kotlin.collections.ArrayList
 
 
 @RestController
@@ -42,9 +43,11 @@ return service?.partnerPaymentCount()
     }
     @PostMapping("/charge")
     @Throws(StripeException::class)
-    fun charge(@RequestBody data: String, model: Model):Model? {
+    fun charge(@RequestBody data: String, model: Model): ResponseEntity<String?> {
 
         var jsonData=JSONObject(data)
+        jsonData=jsonData.getJSONObject("data")
+
         var chargeRequest:ChargeRequest=ChargeRequest()
         chargeRequest.setStripeEmail(jsonData.getJSONObject("token").getString("email"))
         chargeRequest.setDescription("Example charge")
@@ -52,8 +55,7 @@ return service?.partnerPaymentCount()
         chargeRequest.setStripeToken(jsonData.getJSONObject("token").getString("id"))
         chargeRequest.setCurrency("INR")
         var result=JSONObject()
-    jsonData.put("email",jsonData.getJSONObject("token").getString("email"))
-        jsonData.remove("token")
+
         val charge = paymentsService!!.charge(chargeRequest)
         model.addAttribute("id", charge.id)
         result.put("id",charge.id)
@@ -63,10 +65,22 @@ return service?.partnerPaymentCount()
         result.put("balance_transcation",charge.balanceTransaction)
         model.addAttribute("balance_transaction", charge.balanceTransaction)
         jsonData.put("result",result)
+        jsonData.put("time",Date())
         dao?.insert("payment",Document.parse(jsonData.toString()))
-        return model
+        println("Result >>>>$result")
+        val headers = HttpHeaders()
+        headers.add("Response-from", "payment")
+        return ResponseEntity<String?>(result.toString(), headers, HttpStatus.OK)
+        //return model
     }
-
+    @GetMapping("/map/location")
+    fun mapLocation(): ArrayList<Document>? {
+        return service?.findUserLocation()
+    }
+    @DeleteMapping("/category/{category}/product/{product}")
+    fun deleteFormConfig(@RequestParam category: String,@RequestParam product: String): String? {
+        return service?.deleteFormConfig(category,product)
+    }
     @ExceptionHandler(StripeException::class)
     fun handleError(model: Model, ex: StripeException): Model? {
         model.addAttribute("error", ex.message)
