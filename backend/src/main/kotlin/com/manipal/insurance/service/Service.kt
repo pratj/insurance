@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.manipal.insurance.dao.Dao
 import com.mongodb.client.model.Accumulators
 import com.mongodb.client.model.Aggregates
-import com.mongodb.client.model.Field
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -24,11 +23,6 @@ import java.util.*
 import java.util.stream.Collectors
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
-import kotlin.collections.List
-import kotlin.collections.Map
-import kotlin.collections.MutableList
-import kotlin.collections.MutableMap
-import kotlin.collections.isNotEmpty
 import kotlin.collections.set
 
 //import org.springframework.data.document.mongodb.query.Query;
@@ -44,7 +38,10 @@ class Service {
     private val kafkaTemplate: KafkaTemplate<String, String>? = null
     var dao: Dao? = null
 
-
+    /*fun findMinMaxRequests():List<Document>?{
+        dao = mongoTemplate?.let { Dao(it) }
+        var query=""
+    }*/
     fun findUniqueCategory(): List<Document>? {
         dao = mongoTemplate?.let { Dao(it) }
         val fields = Document()
@@ -68,7 +65,7 @@ class Service {
 
     fun findUserLocation(): ArrayList<Document> {
         dao = mongoTemplate?.let { Dao(it) }
-        var paidQuery="{\n" +
+        var paidQuery = "{\n" +
                 "        aggregate: \"payment\",\n" +
                 "        pipeline: [\n" +
                 "\n" +
@@ -82,9 +79,10 @@ class Service {
                 "                \"\$project\": {\n" +
                 "                    \"product\": 1,\n" +
                 "                    \"userLocation\": 1,\n" +
-                "                    \"_id\": 0,\n" +
+                "                    \"_id\": 1,\n" +
                 "                    \"ViewTime\": \"\$time\",\n" +
-                "                    \"category\": 1\n" +
+                "                    \"category\": 1,\n" +
+                "                    \"partner\": 1\n" +
                 "                }\n" +
                 "            },\n" +
                 "            {\n" +
@@ -95,9 +93,9 @@ class Service {
                 "        ],\n" +
                 "        cursor: {}\n" +
                 "    }"
-        var paidMembers=mongoTemplate?.executeCommand(paidQuery) as Document
-        var paidData= JSONObject(paidMembers.toJson()).getJSONObject("cursor").getJSONArray("firstBatch")
-        var nonPaidQuery="{\n" +
+        var paidMembers = mongoTemplate?.executeCommand(paidQuery) as Document
+        var paidData = JSONObject(paidMembers.toJson()).getJSONObject("cursor").getJSONArray("firstBatch")
+        var nonPaidQuery = "{\n" +
                 "    aggregate: \"quotes\",\n" +
                 "    pipeline: [\n" +
                 "        {\n" +
@@ -135,7 +133,7 @@ class Service {
                 "            \"\$project\": {\n" +
                 "                \"product\": 1,\n" +
                 "                \"userLocation\": 1,\n" +
-                "                \"_id\": 0,\n" +
+                "                \"_id\": 1,\n" +
                 "                \"ViewTime\": \"\$time\",\n" +
                 "                \"category\": 1\n" +
                 "            }\n" +
@@ -148,14 +146,14 @@ class Service {
                 "    ],\n" +
                 "    cursor: {}\n" +
                 "}"
-        var nonPaidMembers=mongoTemplate?.executeCommand(nonPaidQuery) as Document
-        var nonPaidData= JSONObject(nonPaidMembers.toJson()).getJSONObject("cursor").getJSONArray("firstBatch")
-        var output=ArrayList<Document>()
-        for(i in 0 until paidData.length()){
-            output.add(Document.parse(paidData[i].toString()))
-        }
-        for(i in 0 until nonPaidData.length()){
+        var nonPaidMembers = mongoTemplate?.executeCommand(nonPaidQuery) as Document
+        var nonPaidData = JSONObject(nonPaidMembers.toJson()).getJSONObject("cursor").getJSONArray("firstBatch")
+        var output = ArrayList<Document>()
+        for (i in 0 until nonPaidData.length()) {
             output.add(Document.parse(nonPaidData[i].toString()))
+        }
+        for (i in 0 until paidData.length()) {
+            output.add(Document.parse(paidData[i].toString()))
         }
         return output
     }

@@ -1,0 +1,7 @@
+.card:hover  {
+    
+    box-shadow: 0 0 5em rgba(73, 72, 72, 0.4);
+    
+    
+    backdrop-filter: blur(10px);
+    }

@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*
 import java.util.*
 import kotlin.collections.ArrayList
 
-
+@CrossOrigin
 @RestController
 @RequestMapping("/api")
 class Controller {
@@ -39,15 +39,15 @@ class Controller {
     private val paymentsService: StripeService? = null
     @GetMapping("/category/partner/payment/count")
     fun paymentPartnerCount(): MutableList<Document>? {
-return service?.partnerPaymentCount()
+        return service?.partnerPaymentCount()
     }
     @PostMapping("/charge")
     @Throws(StripeException::class)
     fun charge(@RequestBody data: String, model: Model): ResponseEntity<String?> {
-
+        dao = mongoTemplate?.let { Dao(it) }
         var jsonData=JSONObject(data)
         jsonData=jsonData.getJSONObject("data")
-
+        print(jsonData)
         var chargeRequest:ChargeRequest=ChargeRequest()
         chargeRequest.setStripeEmail(jsonData.getJSONObject("token").getString("email"))
         chargeRequest.setDescription("Example charge")
